@@ -1,124 +1,186 @@
 import tkinter as tk
-from tkinter import scrolledtext
-import paho.mqtt.client as mqtt
-import time  # To track message latency
-import json  # To send timestamp in the message
+from tkinter import messagebox
+import threading
+import time
 
-# MQTT Settings
-BROKER = 'broker.hivemq.com'  # Public broker for demonstration
-PORT = 1883
-
-# Create MQTT Client
-client = mqtt.Client()
-
-# Callback when a message is received
-def on_message(client, userdata, message):
-    msg = message.payload.decode('utf-8')
+# Fungsi untuk animasi pengiriman pesan Request-Response
+def request_response(sender, receiver, log):
+    # Menampilkan pesan bahwa pengirim mengirim pesan ke penerima
+    log.insert(tk.END, f"{sender} mengirim pesan ke {receiver}...\n")
+    root.update()  # Memperbarui tampilan GUI
+    time.sleep(1)  # Menunggu selama 1 detik
     
-    # Parse the message to get the timestamp
-    msg_data = json.loads(msg)
-    sender_message = msg_data['message']
-    sender_name = msg_data['username']
-    sent_time = msg_data['timestamp']
+    # Menampilkan pesan bahwa penerima menerima pesan dari pengirim
+    log.insert(tk.END, f"{receiver} menerima pesan dari {sender}.\n")
+    root.update()  # Memperbarui tampilan GUI
+    time.sleep(1)  # Menunggu selama 1 detik
     
-    # Calculate latency
-    received_time = time.time()
-    latency = received_time - sent_time
+    # Menampilkan pesan bahwa penerima mengirim respons ke pengirim
+    log.insert(tk.END, f"{receiver} mengirim respons ke {sender}...\n")
+    root.update()  # Memperbarui tampilan GUI
+    time.sleep(1)  # Menunggu selama 1 detik
     
-    # Display the message and latency
-    subscriber_textbox.config(state=tk.NORMAL)
-    subscriber_textbox.insert(tk.END, f"Received from {message.topic} by {sender_name}: {sender_message}\n")
-    subscriber_textbox.insert(tk.END, f"Latency: {latency:.3f} seconds\n\n")
-    subscriber_textbox.config(state=tk.DISABLED)
+    # Menampilkan pesan bahwa pengirim menerima respons dari penerima
+    log.insert(tk.END, f"{sender} menerima respons dari {receiver}.\n")
+    root.update()  # Memperbarui tampilan GUI
+    time.sleep(1)  # Menunggu selama 1 detik
+    
+    # Menampilkan pesan bahwa komunikasi selesai
+    log.insert(tk.END, "Komunikasi selesai.\n\n")
 
-# Connect to the broker and start listening
-def connect_mqtt():
-    client.connect(BROKER, PORT)
-    client.on_message = on_message
-    client.loop_start()
+# Fungsi untuk memulai simulasi Request-Response
+def start_request_response():
+    sender = entry_sender.get()  # Mengambil nama pengirim dari input
+    receiver = entry_receiver.get()  # Mengambil nama penerima dari input
+    
+    # Memeriksa apakah input tidak kosong
+    if not sender or not receiver:
+        messagebox.showwarning("Input Error", "Nama pengirim dan penerima tidak boleh kosong!")
+        return  # Menghentikan eksekusi fungsi jika ada kesalahan
+    
+    log_request.delete(1.0, tk.END)  # Bersihkan log
+    # Memulai thread baru untuk menjalankan fungsi request_response
+    threading.Thread(target=request_response, args=(sender, receiver, log_request)).start()
 
-# Publish message to the topic
-def publish_message():
-    msg = publisher_entry.get()
-    user = username_entry.get()
-    topic = topic_entry.get()
-    if msg and user and topic:
-        # Add timestamp to the message
-        full_message = {
-            "username": user,
-            "message": msg,
-            "timestamp": time.time()  # Send current time as timestamp
-        }
-        client.publish(topic, json.dumps(full_message))
-        publisher_entry.delete(0, tk.END)
+# Fungsi untuk animasi Publish-Subscribe
+def publish_message(publisher, message, log):
+    # Menampilkan pesan bahwa publisher mempublikasikan pesan
+    log.insert(tk.END, f"{publisher} mempublikasikan pesan: '{message}'...\n")
+    root.update()  # Memperbarui tampilan GUI
+    time.sleep(1)  # Menunggu selama 1 detik
+    
+    # Mengirim pesan ke semua subscriber
+    for subscriber in subscribers:
+        log.insert(tk.END, f"{subscriber} menerima pesan: '{message}'.\n")
+        root.update()  # Memperbarui tampilan GUI
+        time.sleep(1)  # Menunggu selama 1 detik
+    
+    log.insert(tk.END, "Pesan diterima oleh semua subscriber.\n\n")
 
-# Subscribe to the topic
-def subscribe_topic():
-    topic = topic_entry.get()
-    if topic:
-        client.subscribe(topic)
-        subscriber_textbox.config(state=tk.NORMAL)
-        subscriber_textbox.insert(tk.END, f"Subscribed to topic: {topic}\n")
-        subscriber_textbox.config(state=tk.DISABLED)
+# Fungsi untuk memulai simulasi Publish-Subscribe
+def start_publish_subscribe():
+    publisher = entry_publisher.get()  # Mengambil nama publisher dari input
+    message = entry_message.get()  # Mengambil pesan dari input
+    
+    # Memeriksa apakah input tidak kosong
+    if not publisher or not message:
+        messagebox.showwarning("Input Error", "Publisher dan pesan tidak boleh kosong!")
+        return  # Menghentikan eksekusi fungsi jika ada kesalahan
+    
+    # Memeriksa apakah ada subscriber
+    if len(subscribers) == 0:
+        messagebox.showwarning("Subscriber Error", "Harus ada setidaknya satu subscriber.")
+        return  # Menghentikan eksekusi fungsi jika tidak ada subscriber
+    
+    log_publish.delete(1.0, tk.END)  # Bersihkan log
+    # Memulai thread baru untuk menjalankan fungsi publish_message
+    threading.Thread(target=publish_message, args=(publisher, message, log_publish)).start()
 
-# GUI Setup
-root = tk.Tk()
-root.title("Multi-User MQTT Publish-Subscribe with Latency")
-root.geometry("600x500")
+# Fungsi untuk menambahkan subscriber
+def add_subscriber():
+    subscriber = entry_subscriber.get()  # Mengambil nama subscriber dari input
+    # Memeriksa apakah subscriber tidak kosong dan belum ditambahkan
+    if subscriber and subscriber not in subscribers:
+        subscribers.append(subscriber)  # Menambahkan subscriber ke daftar
+        listbox_subscribers.insert(tk.END, subscriber)  # Menampilkan subscriber di listbox
+        entry_subscriber.delete(0, tk.END)  # Mengosongkan input subscriber
+    else:
+        messagebox.showwarning("Input Error", "Subscriber tidak boleh kosong atau sudah ditambahkan.")
 
-# Username Frame
-username_frame = tk.Frame(root)
-username_frame.pack(pady=10)
+# Fungsi untuk menghapus subscriber yang dipilih
+def remove_subscriber():
+    selected_subscriber = listbox_subscribers.curselection()  # Mendapatkan subscriber yang dipilih
+    if selected_subscriber:
+        subscriber = listbox_subscribers.get(selected_subscriber)  # Mengambil nama subscriber yang dipilih
+        subscribers.remove(subscriber)  # Menghapus subscriber dari daftar
+        listbox_subscribers.delete(selected_subscriber)  # Menghapus dari listbox
+    else:
+        messagebox.showwarning("Selection Error", "Pilih subscriber yang akan dihapus.")
 
-username_label = tk.Label(username_frame, text="Username:")
-username_label.pack(side=tk.LEFT, padx=5)
+# Fungsi untuk mengganti tampilan sesuai model komunikasi yang dipilih
+def switch_model(selection):
+    if selection == "Request-Response":
+        frame_request_response.tkraise()  # Tampilkan frame Request-Response
+    else:
+        frame_publish_subscribe.tkraise()  # Tampilkan frame Publish-Subscribe
 
-username_entry = tk.Entry(username_frame, width=20)
-username_entry.pack(side=tk.LEFT, padx=5)
+# Setup GUI Tkinter
+root = tk.Tk()  # Membuat instance Tkinter
+root.title("Simulasi Model Komunikasi")  # Menetapkan judul aplikasi
 
-# Topic Frame
-topic_frame = tk.Frame(root)
-topic_frame.pack(pady=10)
+# Variabel untuk menyimpan subscriber
+subscribers = []
 
-topic_label = tk.Label(topic_frame, text="Topic:")
-topic_label.pack(side=tk.LEFT, padx=5)
+# Dropdown untuk memilih model komunikasi
+selected_model = tk.StringVar()
+selected_model.set("Request-Response")  # Set default model
 
-topic_entry = tk.Entry(topic_frame, width=30)
-topic_entry.pack(side=tk.LEFT, padx=5)
+# Dropdown menu untuk memilih model
+dropdown = tk.OptionMenu(root, selected_model, "Request-Response", "Publish-Subscribe", command=switch_model)
+dropdown.grid(row=0, column=0, padx=10, pady=10)  # Menempatkan dropdown di grid
 
-# Publisher Frame
-publisher_frame = tk.Frame(root)
-publisher_frame.pack(pady=10)
+# Frame untuk Request-Response
+frame_request_response = tk.Frame(root, padx=10, pady=10)
+frame_request_response.grid(row=1, column=0, padx=10, pady=10, sticky="nsew")
 
-publisher_label = tk.Label(publisher_frame, text="Message:")
-publisher_label.pack(side=tk.LEFT, padx=5)
+# Label dan input untuk pengirim dan penerima
+tk.Label(frame_request_response, text="Request-Response").grid(row=0, column=0, columnspan=2)
+tk.Label(frame_request_response, text="Nama Pengirim:").grid(row=1, column=0, sticky="e")
+entry_sender = tk.Entry(frame_request_response)
+entry_sender.grid(row=1, column=1)
 
-publisher_entry = tk.Entry(publisher_frame, width=30)
-publisher_entry.pack(side=tk.LEFT, padx=5)
+tk.Label(frame_request_response, text="Nama Penerima:").grid(row=2, column=0, sticky="e")
+entry_receiver = tk.Entry(frame_request_response)
+entry_receiver.grid(row=2, column=1)
 
-publisher_button = tk.Button(publisher_frame, text="Publish", command=publish_message)
-publisher_button.pack(side=tk.LEFT, padx=5)
+# Tombol untuk memulai simulasi Request-Response
+tk.Button(frame_request_response, text="Mulai Simulasi", command=start_request_response).grid(row=3, column=0, columnspan=2)
 
-# Subscriber Frame
-subscriber_frame = tk.Frame(root)
-subscriber_frame.pack(pady=10)
+# Text area untuk log Request-Response
+log_request = tk.Text(frame_request_response, width=40, height=10)
+log_request.grid(row=4, column=0, columnspan=2)
 
-subscriber_label = tk.Label(subscriber_frame, text="Subscriber Log:")
-subscriber_label.pack()
+# Frame untuk Publish-Subscribe
+frame_publish_subscribe = tk.Frame(root, padx=10, pady=10)
+frame_publish_subscribe.grid(row=1, column=0, padx=10, pady=10, sticky="nsew")
 
-subscriber_textbox = scrolledtext.ScrolledText(subscriber_frame, width=60, height=15, state=tk.DISABLED)
-subscriber_textbox.pack(pady=5)
+# Label dan input untuk publisher dan pesan
+tk.Label(frame_publish_subscribe, text="Publish-Subscribe").grid(row=0, column=0, columnspan=2)
+tk.Label(frame_publish_subscribe, text="Publisher:").grid(row=1, column=0, sticky="e")
+entry_publisher = tk.Entry(frame_publish_subscribe)
+entry_publisher.grid(row=1, column=1)
 
-# Subscribe Button
-subscribe_button = tk.Button(root, text="Subscribe", command=subscribe_topic)
-subscribe_button.pack(pady=10)
+tk.Label(frame_publish_subscribe, text="Pesan:").grid(row=2, column=0, sticky="e")
+entry_message = tk.Entry(frame_publish_subscribe)
+entry_message.grid(row=2, column=1)
 
-# Start MQTT connection
-connect_mqtt()
+# Tombol untuk mempublikasikan pesan
+tk.Button(frame_publish_subscribe, text="Publikasikan Pesan", command=start_publish_subscribe).grid(row=3, column=0, columnspan=2)
 
-# Run the GUI loop
+# Text area untuk log Publish-Subscribe
+log_publish = tk.Text(frame_publish_subscribe, width=40, height=10)
+log_publish.grid(row=4, column=0, columnspan=2)
+
+# Frame untuk mengelola subscriber
+frame_subscriber = tk.Frame(frame_publish_subscribe, padx=10, pady=10)
+frame_subscriber.grid(row=5, column=0, columnspan=2, padx=10, pady=10)
+
+tk.Label(frame_subscriber, text="Subscribers").grid(row=0, column=0, columnspan=2)
+
+# Input untuk menambahkan subscriber
+entry_subscriber = tk.Entry(frame_subscriber)
+entry_subscriber.grid(row=1, column=0, columnspan=2)
+
+# Tombol untuk menambah dan menghapus subscriber
+tk.Button(frame_subscriber, text="Tambah Subscriber", command=add_subscriber).grid(row=2, column=0, columnspan=2)
+tk.Button(frame_subscriber, text="Hapus Subscriber", command=remove_subscriber).grid(row=3, column=0, columnspan=2)
+
+# Listbox untuk menampilkan daftar subscriber
+listbox_subscribers = tk.Listbox(frame_subscriber, height=6)
+listbox_subscribers.grid(row=4, column=0, columnspan=2)
+
+# Atur frame request-response sebagai frame yang pertama kali muncul
+frame_request_response.tkraise()
+
+# Memulai loop utama Tkinter
 root.mainloop()
-
-# Stop MQTT loop on exit
-client.loop_stop()
-client.disconnect()
