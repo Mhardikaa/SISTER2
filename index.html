@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perbandingan Model Komunikasi</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1 style="text-align: center;">Perbandingan Model Komunikasi</h1>
+
+    <section id="request-response">
+        <h2 style="text-align: center;">Model Request-Response</h2>
+        <div class="diagram">
+            <div class="box client">Klien</div>
+            <div class="arrow">→</div>
+            <div class="box server">Server</div>
+            <div class="arrow">←</div>
+            <div class="box response">Server</div>
+        </div>
+        <div class="request-area">
+            <label for="request">Request-Response</label>
+            <input type="text" id="request" placeholder="Masukkan nama">
+            <button onclick="sendRequest()">Kirim Permintaan</button>
+        </div>
+        <div id="request-response-log"></div>
+    </section>
+
+    <section id="publish-subscribe">
+        <h2 style="text-align: center;">Model Publish-Subscribe</h2>
+        <div class="diagram">
+            <div class="box publisher">Penerbit</div>
+            <div class="arrow">→</div>
+            <div class="box channel">Saluran</div>
+            <div class="arrow">→</div>
+            <div class="box subscriber">Pelanggan</div>
+        </div>
+        <div class="publish-area">
+            <label for="publisher">Publisher:</label>
+            <input type="text" id="publisher" placeholder="Nama Penerbit">
+            <label for="message">Pesan:</label>
+            <input type="text" id="message" placeholder="Masukkan pesan">
+            <button onclick="publishMessage()">Publikasikan Pesan</button>
+        </div>
+        <div id="publish-log"></div>
+    </section>
+
+    <script>
+        // Fungsi untuk menangani Request-Response
+        function sendRequest() {
+            const requestName = document.getElementById('request').value;
+            const log = document.getElementById('request-response-log');
+            if (requestName) {
+                log.innerHTML += `<p>Klien mengirim permintaan: ${requestName}</p>`;
+                log.innerHTML += `<p>Server menerima permintaan: ${requestName}</p>`;
+                log.innerHTML += `<p>Server mengirim respons ke Klien.</p>`;
+                log.innerHTML += `<p>Klien menerima respons dari Server.</p>`;
+                document.getElementById('request').value = ''; // Kosongkan input
+            } else {
+                alert("Masukkan nama untuk mengirim permintaan.");
+            }
+        }
+
+        // Fungsi untuk menangani Publish-Subscribe
+        function publishMessage() {
+            const publisherName = document.getElementById('publisher').value;
+            const message = document.getElementById('message').value;
+            const log = document.getElementById('publish-log');
+            if (publisherName && message) {
+                log.innerHTML += `<p>${publisherName} mempublikasikan pesan: '${message}'</p>`;
+                log.innerHTML += `<p>Pelanggan menerima pesan: '${message}'</p>`;
+                document.getElementById('publisher').value = ''; // Kosongkan input
+                document.getElementById('message').value = ''; // Kosongkan input
+            } else {
+                alert("Masukkan nama penerbit dan pesan untuk mempublikasikan.");
+            }
+        }
+    </script>
+</body>
+</html>
