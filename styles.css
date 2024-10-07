@@ -1,0 +1,70 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+}
+
+h2 {
+    color: #007bff;
+}
+
+.diagram {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 20px 0;
+}
+
+.box {
+    background: white;
+    border: 2px solid #007bff;
+    border-radius: 8px;
+    padding: 15px 30px;
+    margin: 0 10px;
+    text-align: center;
+}
+
+.arrow {
+    font-size: 24px;
+    margin: 0 10px;
+}
+
+.request-area, .publish-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 20px 0;
+}
+
+.request-area input, .publish-area input {
+    padding: 10px;
+    margin-bottom: 10px;
+    width: 200px;
+}
+
+.request-area button, .publish-area button {
+    padding: 10px 20px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.request-area button:hover, .publish-area button:hover {
+    background: #0056b3;
+}
+
+#request-response-log, #publish-log {
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 10px;
+    width: 80%;
+    max-width: 400px;
+    margin: 10px auto;
+    height: 100px;
+    overflow-y: auto;
+    text-align: center; /* Mengatur teks di tengah */
+}
